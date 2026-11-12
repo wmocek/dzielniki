@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dzielniki i NWD – zadania</title>
+<style>
+:root{--ac:#c0392b;--bub:#fbe3b0;--ok:#1e8449;--bad:#c0392b;--bg:#fffaf2;--ink:#2b2b2b}
+*{box-sizing:border-box}
+body{margin:0;font-family:Georgia,"Times New Roman",serif;background:var(--bg);color:var(--ink);line-height:1.45}
+header{background:#fff;border-bottom:3px solid var(--ac);padding:14px 16px;position:sticky;top:0;z-index:5}
+.hw{max-width:900px;margin:auto;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+h1{margin:0;color:var(--ac);font-size:30px}
+.sc{font-family:system-ui,sans-serif;font-size:15px}
+.bar{height:8px;background:#eee;border-radius:5px;overflow:hidden;width:180px;margin-top:4px}
+.bar>i{display:block;height:100%;background:var(--ok);width:0;transition:width .3s}
+button{font:600 14px system-ui,sans-serif;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;background:var(--ac);color:#fff}
+button.sec{background:#e9e1d3;color:#333}
+main{max-width:900px;margin:auto;padding:12px 14px 60px}
+.card{background:#fff;border:1px solid #eadfc9;border-radius:12px;padding:14px 16px;margin:16px 0;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.card h2{margin:0 0 8px;font-size:19px}
+.card h2 b{color:var(--ac);font-size:24px;margin-right:4px}
+.bub{display:inline-block;background:var(--bub);border-radius:16px;padding:2px 12px;font-weight:700;margin-right:6px}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 10px;font-family:system-ui,sans-serif}
+.chip{min-width:34px;height:34px;border:1.5px solid #cdbf9f;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#fff;cursor:pointer;font-size:14px;user-select:none;padding:0 4px;color:var(--ink)}
+.chip.on{background:#ffe08a;border-color:#d4a017}
+.chip.good{background:#c8f0d2;border-color:var(--ok)} .chip.bad{background:#f8c9c4;border-color:var(--bad)} .chip.miss{border:2px dashed var(--bad)}
+.row{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:8px 0}
+input[type=text],input[type=number]{width:70px;font:16px system-ui,sans-serif;padding:6px;border:1.5px solid #cdbf9f;border-radius:7px;text-align:center}
+input.good{border-color:var(--ok);background:#e8f8ee} input.bad{border-color:var(--bad);background:#fdeceb}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.pairs div{margin:4px 0;font-family:system-ui,sans-serif}
+.ex{color:#2e86c1;font-weight:700}
+.msg{font:14px system-ui,sans-serif;min-height:20px;margin-top:6px}
+.msg.good{color:var(--ok)} .msg.bad{color:var(--bad)}
+.tools{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.hint{font:13px system-ui,sans-serif;color:#555;background:#f6f1e6;border-radius:8px;padding:6px 10px;margin-top:8px;display:none}
+.tf button{margin-right:8px}
+.tf button.sel{outline:3px solid #ffd35c}
+footer{text-align:center;font:13px system-ui,sans-serif;color:#777;padding:20px}
+</style>
+</head>
+<body>
+<header><div class="hw">
+ <div><h1>Dzielniki</h1><div class="sc">Punkty: <b id="pts">0</b> / <span id="max">0</span><div class="bar"><i id="bar"></i></div></div></div>
+ <div class="tools"><button onclick="checkAll()">Sprawdź wszystko</button><button class="sec" onclick="build(true)">Nowe liczby</button><button class="sec" onclick="build(false)">Od początku</button></div>
+</div></header>
+<main id="m"></main>
+<footer>Zadania w duchu ćwiczeń o dzielnikach i NWD. Kliknij liczby, aby je zaznaczyć; „Nowe liczby” losuje inny zestaw.</footer>
+<script>
+const $=(t,a={},h="")=>{const e=document.createElement(t);Object.assign(e,a);if(h)e.innerHTML=h;return e};
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+const divs=n=>{const r=[];for(let i=1;i<=n;i++)if(n%i==0)r.push(i);return r};
+const pairs=n=>divs(n).filter(d=>d*d<n).map(d=>[d,n/d]);
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=(arr,k)=>{const c=[...arr],r=[];while(r.length<k&&c.length)r.push(c.splice(rnd(0,c.length-1),1)[0]);return r};
+const isSq=n=>Number.isInteger(Math.sqrt(n));
+const nd=n=>divs(n).length;
+let tasks=[];
+const DEF={t1:[16,24,31,42],t2:[9,19,20,15,27,36],ex:98,t3:[46,75,51,54,33,85,76,80],t4:[30,60],t5:[[24,40],[15,28],[42,63]],t6:[15,24],t7:[[5,10],[14,7],[8,12],[6,13],[12,18],[15,40],[21,28],[20,5],[16,27]],t8:[6,9,21],t9:[42,54],t10:[84,120]};
+function randSet(){
+ const primes=[11,13,17,19,23,29,31,37,41,43],comp=[];for(let i=8;i<=44;i++)if(nd(i)>2)comp.push(i);
+ const s={};
+ s.t1=pick([...pick(primes,1),...pick(comp,3)],4).sort((a,b)=>a-b);
+ s.t2=pick([...pick(primes.filter(p=>p<25),2),...pick(comp.filter(c=>c<=40),4)],6);
+ const ns=[];for(let i=30;i<=96;i++)if(!isSq(i)&&nd(i)>=4&&nd(i)<=12)ns.push(i);
+ s.t3=pick(ns,8);s.ex=pick(ns.filter(x=>!s.t3.includes(x)&&nd(x)==6),1)[0]||98;
+ const lo=rnd(10,40);s.t4=[lo,lo+30];
+ const mk=(wantCop)=>{for(;;){const a=rnd(10,60),b=rnd(10,70);if(a!=b&&((gcd(a,b)==1)==wantCop)&&(wantCop||gcd(a,b)>=4))return[a,b]}};
+ s.t5=[mk(false),mk(true),mk(false)];
+ const a=rnd(12,30);s.t6=[a,a+rnd(2,12)];
+ s.t7=[];for(let i=0;i<9;i++){const g=rnd(1,7),p=rnd(1,5),q=rnd(1,5);let a=g*p,b=g*q;if(a==b||a<3||b<3)b=a+g+1;s.t7.push([a,b])}
+ s.t8=pick([4,6,8,9,10,12,14,15,16,18,20,21,25,27],3);
+ const cop=(lo,hi)=>{for(;;){const p=rnd(lo,hi),q=rnd(lo,hi);if(p!=q&&gcd(p,q)==1)return[p,q]}};
+ let [p,q]=cop(4,10),g=rnd(3,9);s.t9=[g*p,g*q];
+ [p,q]=cop(5,12);g=rnd(6,15);s.t10=[g*p,g*q];
+ return s;
+}
+function chipRow(n,container,sel,opts={}){
+ const row=$("div",{className:"chips"});const chips=[];
+ for(let k=1;k<=n;k++){const c=$("div",{className:"chip",textContent:k});c.onclick=()=>{sel.has(k)?sel.delete(k):sel.add(k);c.classList.toggle("on",sel.has(k));clearMarks()};row.appendChild(c);chips.push(c)}
+ function clearMarks(){chips.forEach((c,i)=>c.classList.remove("good","bad","miss"))}
+ container.appendChild(row);return {chips,clearMarks};
+}
+function markChips(chips,sel,correctSet){
+ let ok=true;
+ chips.forEach((c,i)=>{const k=i+1;c.classList.remove("good","bad","miss");
+  if(sel.has(k)&&correctSet.has(k))c.classList.add("good");
+  else if(sel.has(k)){c.classList.add("bad");ok=false}
+  else if(correctSet.has(k)){c.classList.add("miss");ok=false}});
+ return ok;
+}
+function card(num,html,hint){
+ const c=$("div",{className:"card"});c.appendChild($("h2",{},`<b>${num}.</b> ${html}`));
+ const msg=$("div",{className:"msg"});const body=$("div");c.append(body);
+ const tools=$("div",{className:"tools"});c.append(tools,msg);
+ let h=null;if(hint){h=$("div",{className:"hint",innerHTML:hint});c.appendChild(h);tools.appendChild($("button",{className:"sec",textContent:"Podpowiedź",onclick:()=>h.style.display=h.style.display=="block"?"none":"block"}))}
+ return {c,body,msg,tools};
+}
+function register(t,check,points){t.points=points;t.check=()=>{const r=check();t.msg.className="msg "+(r.score==t.points?"good":"bad");t.msg.textContent=r.text;t.score=r.score;update();return r};t.score=0;
+ t.tools.prepend($("button",{textContent:"Sprawdź",onclick:()=>t.check()}));tasks.push(t);document.getElementById("m").appendChild(t.c)}
+function inp(cls=""){const i=$("input",{type:"number",className:cls});i.oninput=()=>i.classList.remove("good","bad");return i}
+function mark(i,ok){i.classList.remove("good","bad");i.classList.add(ok?"good":"bad")}
+function update(){const p=tasks.reduce((s,t)=>s+(t.score||0),0),m=tasks.reduce((s,t)=>s+t.points,0);
+ document.getElementById("pts").textContent=p;document.getElementById("max").textContent=m;document.getElementById("bar").style.width=(m?p/m*100:0)+"%"}
+function checkAll(){tasks.forEach(t=>t.check())}
+
+function build(random){
+ const S=random?randSet():DEF;document.getElementById("m").innerHTML="";tasks=[];update();
+ // 1
+ {const t=card(1,"Zaznacz wszystkie dzielniki liczb zapisanych w kółkach.","Dzielnik to liczba, przez którą dana liczba dzieli się bez reszty. Zawsze zaznacz 1 i samą liczbę.");
+  const sels=S.t1.map(n=>{const s=new Set();t.body.appendChild($("div",{innerHTML:`<span class="bub">${n}</span>`}));const r=chipRow(n,t.body,s);return{n,s,r}});
+  register(t,()=>{let ok=0;sels.forEach(x=>{if(markChips(x.r.chips,x.s,new Set(divs(x.n))))ok++});return{score:ok,text:`Poprawnie: ${ok} z ${sels.length}.`}},sels.length)}
+ // 2
+ {const t=card(2,"Zaznacz dzielniki podanych liczb (to samo, co wypisanie ich).","Sprawdź po kolei: czy 2, 3, 4… dzielą liczbę bez reszty? Liczba pierwsza ma tylko dwa dzielniki.");
+  const sels=S.t2.map(n=>{const s=new Set();t.body.appendChild($("div",{innerHTML:`<span class="bub">${n}</span>`}));const r=chipRow(n,t.body,s);return{n,s,r}});
+  register(t,()=>{let ok=0;sels.forEach(x=>{if(markChips(x.r.chips,x.s,new Set(divs(x.n))))ok++});return{score:ok,text:`Poprawnie: ${ok} z ${sels.length}.`}},sels.length)}
+ // 3
+ {const t=card(3,"Wypisz dzielniki podanych liczb parami (według wzoru).","Szukaj dzielników od najmniejszego: 1·n, potem 2·…, 3·… i tak dalej, aż pary zaczną się powtarzać (mniejszy dzielnik zawsze podajemy po lewej).");
+  const g=$("div",{className:"grid pairs"});t.body.appendChild(g);
+  const ex=$("div",{className:"ex"});ex.innerHTML=`<span class="bub">${S.ex}</span>`+pairs(S.ex).map(p=>`<div>${p[0]} · ${p[1]}</div>`).join("");g.appendChild(ex);
+  const blocks=S.t3.map(n=>{const d=$("div",{innerHTML:`<span class="bub">${n}</span>`});const rows=pairs(n).map(()=>{const a=inp(),b=inp(),r=$("div");r.append(a," · ",b);d.appendChild(r);return[a,b]});g.appendChild(d);return{n,rows}});
+  register(t,()=>{let ok=0;blocks.forEach(x=>{const pr=pairs(x.n);let good=true;x.rows.forEach((r,i)=>{const v=r[0].value==pr[i][0]&&r[1].value==pr[i][1];mark(r[0],r[0].value==pr[i][0]);mark(r[1],r[1].value==pr[i][1]);if(!v)good=false});if(good)ok++});return{score:ok,text:`Poprawnie: ${ok} z ${blocks.length}.`}},blocks.length)}
+ // 4
+ {const [lo,hi]=S.t4;const t=card(4,`Spośród liczb od ${lo} do ${hi} zaznacz te, które mają dokładnie dwa dzielniki.`,"Takie liczby nazywamy pierwszymi: dzielą się tylko przez 1 i przez siebie.");
+  const mk=(a,b,cnt)=>{const s=new Set();const row=$("div",{className:"chips"});const chips=[];for(let k=a;k<=b;k++){const c=$("div",{className:"chip",textContent:k});c.onclick=()=>{s.has(k)?s.delete(k):s.add(k);c.classList.toggle("on",s.has(k));chips.forEach(x=>x.classList.remove("good","bad","miss"))};row.appendChild(c);chips.push(c)}
+   t.body.appendChild(row);return{s,chips,a,cnt}};
+  const A=mk(lo,hi,2);t.body.appendChild($("p",{innerHTML:"<b style='color:var(--ac)'>4b.</b> Spośród liczb od 1 do 50 zaznacz te, które mają dokładnie trzy dzielniki."}));const B=mk(1,50,3);
+  register(t,()=>{let ok=0;[A,B].forEach(x=>{const cs=new Set();for(let k=x.a;k<=x.a+x.chips.length-1;k++)if(nd(k)==x.cnt)cs.add(k);let good=true;x.chips.forEach((c,i)=>{const k=x.a+i;c.classList.remove("good","bad","miss");if(x.s.has(k)&&cs.has(k))c.classList.add("good");else if(x.s.has(k)){c.classList.add("bad");good=false}else if(cs.has(k)){c.classList.add("miss");good=false}});if(good)ok++});return{score:ok,text:`Poprawnie: ${ok} z 2 części.`}},2)}
+ // 5
+ {const t=card(5,"Zaznacz dzielniki podanych liczb, a potem wpisz ich największy wspólny dzielnik.","Wspólne dzielniki to te, które zaznaczyłeś(-aś) w obu rzędach. Największy z nich to NWD.");
+  const parts=S.t5.map(([a,b],i)=>{const sa=new Set(),sb=new Set();const d=$("div",{innerHTML:`<b>${"abc"[i]})</b> <span class="bub">${a}</span> <span class="bub">${b}</span>`});t.body.appendChild(d);
+   const ra=chipRow(a,t.body,sa),rb=chipRow(b,t.body,sb);const w=$("div",{className:"row"});const i1=inp();w.append(`NWD(${a}, ${b}) = `,i1);t.body.appendChild(w);return{a,b,sa,sb,ra,rb,i1}});
+  register(t,()=>{let ok=0;parts.forEach(x=>{const o1=markChips(x.ra.chips,x.sa,new Set(divs(x.a))),o2=markChips(x.rb.chips,x.sb,new Set(divs(x.b))),o3=+x.i1.value==gcd(x.a,x.b);mark(x.i1,o3);if(o1&&o2&&o3)ok++});return{score:ok,text:`Poprawnie: ${ok} z ${parts.length}.`}},parts.length)}
+ // 6
+ {const [a,b]=S.t6;const t=card(6,`Czy największy wspólny dzielnik liczb ${a} i ${b} może być większy od liczby ${a}?`,"Wspólny dzielnik jest dzielnikiem każdej z liczb, więc nie może przekroczyć mniejszej z nich.");
+  let ch=null;const w=$("div",{className:"tf"});["Tak","Nie"].forEach(v=>{const bt=$("button",{className:"sec",textContent:v,onclick:()=>{ch=v;[...w.children].forEach(x=>x.classList.toggle("sel",x===bt))}});w.appendChild(bt)});t.body.appendChild(w);
+  register(t,()=>({score:ch=="Nie"?1:0,text:ch==null?"Wybierz odpowiedź.":ch=="Nie"?`Dobrze: NWD(${a}, ${b}) = ${gcd(a,b)}, nie przekroczy ${a}.`:"Nie – NWD nie może być większy od mniejszej z liczb."}),1)}
+ // 7
+ {const t=card(7,"Zastanów się, jakie dzielniki ma mniejsza z dwóch liczb, i ustal NWD.","Wypisz dzielniki mniejszej liczby i sprawdź od największego, czy dzieli też drugą.");
+  const g=$("div",{className:"grid"});t.body.appendChild(g);const items=S.t7.map(([a,b],i)=>{const d=$("div",{className:"row"});const x=inp();d.append(`${"abcdefghi"[i]}) NWD(${a}, ${b}) = `,x);g.appendChild(d);return{a,b,x}});
+  register(t,()=>{let ok=0;items.forEach(o=>{const v=+o.x.value==gcd(o.a,o.b);mark(o.x,v);if(v)ok++});return{score:ok,text:`Poprawnie: ${ok} z ${items.length}.`}},items.length)}
+ // 8
+ {const t=card(8,"Wpisz dowolną liczbę tak, aby równość była prawdziwa.","Jeśli NWD ma być równy pierwszej liczbie, wybierz jej wielokrotność. Jeśli ma być 1, wybierz liczbę, która nie ma z nią wspólnych dzielników poza 1.");
+  const g=$("div",{className:"grid"});t.body.appendChild(g);const items=[];
+  S.t8.forEach(a=>{const d=$("div");const tg=[a,1,divs(a).filter(x=>x>1&&x<a)[0]];tg.forEach(v=>{const r=$("div",{className:"row"});const x=inp();r.append(`NWD(${a}, `,x,`) = ${v}`);d.appendChild(r);items.push({a,v,x})});g.appendChild(d)});
+  register(t,()=>{let ok=0;items.forEach(o=>{const n=+o.x.value;const v=Number.isInteger(n)&&n>0&&gcd(o.a,n)==o.v;mark(o.x,v);if(v)ok++});return{score:ok,text:`Poprawnie: ${ok} z ${items.length}.`}},items.length)}
+ // 9
+ {const [a,b]=S.t9;const t=card(9,`Z ${a} jabłek i ${b} pomarańczy Kasia chce przygotować jak najwięcej jednakowych koszy owoców, wykorzystując wszystkie owoce. Ile będzie koszy i co znajdzie się w jednym koszu?`,"Liczba koszy musi dzielić obie liczby, a ma być jak największa. To NWD.");
+  const w=$("div",{className:"row"});const k=inp(),j=inp(),p=inp();w.append(`NWD(${a}, ${b}) = `,k," → jabłek w koszu: ",j,", pomarańczy w koszu: ",p);t.body.appendChild(w);
+  register(t,()=>{const g=gcd(a,b);const o=[+k.value==g,+j.value==a/g,+p.value==b/g];mark(k,o[0]);mark(j,o[1]);mark(p,o[2]);const s=o.every(Boolean);return{score:s?1:0,text:s?`Brawo: ${g} koszy, w każdym ${a/g} jabłek i ${b/g} pomarańczy.`:"Sprawdź jeszcze raz – kratki pokazują, co jest nie tak."}},1)}
+ // 10
+ {const [a,b]=S.t10;const t=card(10,`Dwa sznurki mają ${a} cm i ${b} cm. Trzeba je pociąć na jednakowe, możliwie najdłuższe kawałki bez resztek. Jaką długość ma kawałek i ile kawałków powstanie?`,"Długość kawałka to NWD. Liczbę kawałków dostaniesz, dzieląc długość każdego sznurka przez długość kawałka i dodając wyniki.");
+  const w=$("div",{className:"row"});const k=inp(),j=inp();w.append("Długość (cm): ",k,"  Liczba kawałków: ",j);t.body.appendChild(w);
+  register(t,()=>{const g=gcd(a,b);const o=[+k.value==g,+j.value==(a+b)/g];mark(k,o[0]);mark(j,o[1]);const s=o.every(Boolean);return{score:s?1:0,text:s?`Tak: kawałki po ${g} cm, razem ${(a+b)/g}.`:"Sprawdź jeszcze raz."}},1)}
+ update();window.scrollTo(0,0);
+}
+build(false);
+</script>
+</body>
+</html>
